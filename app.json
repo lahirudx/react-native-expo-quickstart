@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "react-native-expo-quickstart",
-    "slug": "react-native-expo-quickstart",
+    "name": "livekit-expo-example",
+    "slug": "livekit-expo-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,10 @@
     "ios": {
       "supportsTablet": true,
       "bitcode": false,
-      "bundleIdentifier": "io.livekit.expoquickstart"
+      "bundleIdentifier": "co.vaayuu.livekit.expoquickstart",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +37,7 @@
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.WAKE_LOCK"
       ],
-      "package": "io.livekit.expoquickstart"
+      "package": "co.vaayuu.livekit.expoquickstart"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -45,8 +48,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "bca63334-2fca-4a08-8f79-4dd35ece68f0"
+        "projectId": "30ee0ed8-ec79-425d-8eb0-1065da50466d"
       }
-    }
+    },
+    "owner": "lahirudx"
   }
 }
