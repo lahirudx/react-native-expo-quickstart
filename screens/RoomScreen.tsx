@@ -22,7 +22,6 @@ import {
   useLocalParticipant,
   useLiveKitRoom,
   useParticipants,
-  useRoomInfo,
 } from "@livekit/react-native";
 import {
   Track,
@@ -178,12 +177,23 @@ const RoomView = ({ navigation, roomName }: any) => {
     item,
   }) => {
     if (isTrackReference(item)) {
+      const participantQuality = item.participant.connectionQuality;
       return (
         <View style={styles.participantContainer}>
           <VideoTrack trackRef={item} style={styles.participantView} />
-          <Text style={styles.participantName}>
-            {item.participant.identity}
-          </Text>
+          <View style={styles.participantOverlay}>
+            <View style={styles.infoContainer}>
+              <View
+                style={[
+                  styles.qualityDot,
+                  { backgroundColor: getQualityColor(participantQuality) },
+                ]}
+              />
+              <Text style={styles.participantName}>
+                {item.participant.identity}
+              </Text>
+            </View>
+          </View>
         </View>
       );
     } else {
@@ -240,17 +250,6 @@ const RoomView = ({ navigation, roomName }: any) => {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <View style={[styles.qualityContainer, { marginTop: insets.top + 8 }]}>
-        <View
-          style={[
-            styles.qualityDot,
-            { backgroundColor: getQualityColor(connectionQuality) },
-          ]}
-        />
-        <Text style={styles.qualityText}>
-          {ConnectionQuality[connectionQuality]}
-        </Text>
-      </View>
       <View style={[styles.videoContainer, { marginTop: insets.top }]}>
         <FlatList
           data={tracks}
@@ -326,28 +325,20 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
   },
-  qualityContainer: {
-    position: "absolute",
-    top: 0,
-    left: 16,
-    zIndex: 1,
+  infoContainer: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 5,
+    borderRadius: 5,
+    alignSelf: "flex-end",
   },
   qualityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  qualityText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   gridContainer: {
     padding: 8,
@@ -357,25 +348,29 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   participantContainer: {
-    width: "49%", // Leave small gap between videos
-    aspectRatio: 3 / 4, // Taller aspect ratio
+    width: "49%",
+    aspectRatio: 3 / 4,
     margin: 4,
     backgroundColor: "#333",
     borderRadius: 8,
     overflow: "hidden",
+    position: "relative",
   },
   participantView: {
     flex: 1,
     borderRadius: 8,
   },
-  participantName: {
+  participantOverlay: {
     position: "absolute",
-    bottom: 8,
+    top: 8,
     left: 8,
+    right: 8,
+    bottom: 8,
+    justifyContent: "space-between",
+  },
+  participantName: {
     color: "white",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 4,
-    borderRadius: 4,
+    fontSize: 12,
   },
   controlsContainer: {
     width: "100%",
