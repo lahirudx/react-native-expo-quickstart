@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   TextInput,
@@ -11,18 +11,62 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
-export default function JoinScreen({ navigation }: any) {
+interface Room {
+  roomId: string;
+  displayName: string;
+  participantCount: number;
+}
+
+const serverUrl = "http://192.168.1.17:3000";
+const wsUrl = "ws://192.168.1.17:3000";
+
+export default function JoinScreen() {
   const [username, setUsername] = useState("");
-  const [room, setRoom] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const serverUrl = "http://3.133.109.97:3000";
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState<string>("");
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Initialize WebSocket connection
+    const socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+      console.log("WebSocket Connected");
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "rooms") {
+        setRooms(data.rooms);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
+
+    setWs(socket);
+
+    // Cleanup on unmount
+    return () => {
+      socket.close();
+    };
+  }, []);
 
   const handleJoin = async () => {
-    if (!username || !room) {
-      Alert.alert("Error", "Please enter both username and room.");
+    if (!username) {
+      Alert.alert("Error", "Please enter your username.");
       return;
     }
 
@@ -35,12 +79,19 @@ export default function JoinScreen({ navigation }: any) {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        data: { username, room },
+        data: {
+          username,
+          room: selectedRoom,
+          isHost: !selectedRoom, // If no room selected, user becomes host
+        },
         timeout: 10000,
       });
 
-      const { token } = response.data;
-      navigation.navigate("Room", { token, room });
+      const { token, room, displayName } = response.data;
+      router.push({
+        pathname: "/room",
+        params: { token, room, displayName },
+      });
     } catch (error: any) {
       console.error("Connection error:", error);
       Alert.alert(
@@ -84,23 +135,35 @@ export default function JoinScreen({ navigation }: any) {
               placeholderTextColor="#666"
             />
           </View>
-          <View style={styles.inputContainer}>
-            <Ionicons
-              name="people"
-              size={24}
-              color="#666"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Enter room name"
-              value={room}
-              onChangeText={setRoom}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholderTextColor="#666"
-            />
-          </View>
+
+          {rooms.length > 0 && (
+            <View style={styles.inputContainer}>
+              <Ionicons
+                name="people"
+                size={24}
+                color="#666"
+                style={styles.inputIcon}
+              />
+              <Picker
+                selectedValue={selectedRoom}
+                style={styles.picker}
+                onValueChange={(itemValue) => setSelectedRoom(itemValue)}
+                dropdownIconColor="#666"
+              >
+                <Picker.Item label="Start your own stream" value="" />
+                {rooms.map((room) => (
+                  <Picker.Item
+                    key={room.roomId}
+                    label={`${room.displayName} (${room.participantCount} ${
+                      room.participantCount === 1 ? "viewer" : "viewers"
+                    })`}
+                    value={room.roomId}
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+
           <TouchableOpacity
             style={[styles.joinButton, isLoading && styles.joinButtonDisabled]}
             onPress={handleJoin}
@@ -116,7 +179,9 @@ export default function JoinScreen({ navigation }: any) {
                   color="white"
                   style={styles.buttonIcon}
                 />
-                <Text style={styles.joinButtonText}>Join Room</Text>
+                <Text style={styles.joinButtonText}>
+                  {selectedRoom ? "Join Stream" : "Start Stream"}
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -172,6 +237,11 @@ const styles = StyleSheet.create({
     height: 50,
     color: "white",
     fontSize: 16,
+  },
+  picker: {
+    flex: 1,
+    height: 50,
+    color: "white",
   },
   joinButton: {
     flexDirection: "row",

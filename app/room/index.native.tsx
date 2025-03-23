@@ -32,11 +32,13 @@ import {
 } from "livekit-client";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 registerGlobals();
 
-export default function RoomScreen({ route, navigation }: any) {
-  const { token, room } = route.params;
+export default function RoomScreen() {
+  const { token, room } = useLocalSearchParams();
+  const router = useRouter();
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function RoomScreen({ route, navigation }: any) {
   return (
     <LiveKitRoom
       serverUrl="wss://rn-meet-impecxbf.livekit.cloud"
-      token={token}
+      token={token as string}
       connect={true}
       options={{
         adaptiveStream: { pixelDensity: "screen" },
@@ -63,13 +65,14 @@ export default function RoomScreen({ route, navigation }: any) {
       // @ts-ignore - type definitions seem incorrect
       onConnected={() => setIsConnected(true)}
     >
-      <RoomView navigation={navigation} roomName={room} />
+      <RoomView roomName={room as string} />
     </LiveKitRoom>
   );
 }
 
-const RoomView = ({ navigation, roomName }: any) => {
+const RoomView = ({ roomName }: { roomName: string }) => {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   // Get all camera tracks
   const tracks = useTracks(
     [
@@ -79,7 +82,8 @@ const RoomView = ({ navigation, roomName }: any) => {
     { updateOnlyOn: [] }
   );
   const { localParticipant } = useLocalParticipant();
-  const { room } = useLiveKitRoom(roomName);
+  // @ts-ignore - type definitions seem incorrect
+  const { room } = useLiveKitRoom();
   const participants = useParticipants();
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
@@ -152,7 +156,7 @@ const RoomView = ({ navigation, roomName }: any) => {
     if (!room) return;
     try {
       room.disconnect();
-      navigation.navigate("Join");
+      router.push("/");
     } catch (e) {
       console.error("Failed to leave room:", e);
     }
@@ -319,7 +323,6 @@ const styles = StyleSheet.create({
   },
   videoContainer: {
     flex: 1,
-    backgroundColor: "#000",
   },
   loadingText: {
     color: "white",
