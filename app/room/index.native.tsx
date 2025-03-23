@@ -105,6 +105,9 @@ const RoomView = ({ roomName }: { roomName: string }) => {
 
     return () => {
       localParticipant.off("connectionQualityChanged", updateQuality);
+      // Cleanup camera and mic
+      localParticipant.setCameraEnabled(false);
+      localParticipant.setMicrophoneEnabled(false);
     };
   }, [room, localParticipant]);
 
@@ -152,9 +155,14 @@ const RoomView = ({ roomName }: { roomName: string }) => {
     }
   };
 
-  const leaveRoom = () => {
-    if (!room) return;
+  const leaveRoom = async () => {
+    if (!room || !localParticipant) return;
     try {
+      // Disable camera and mic first
+      await localParticipant.setCameraEnabled(false);
+      await localParticipant.setMicrophoneEnabled(false);
+
+      // Then disconnect from room
       room.disconnect();
       router.push("/");
     } catch (e) {

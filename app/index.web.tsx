@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface Room {
   roomId: string;
@@ -20,6 +21,7 @@ interface Room {
 
 const serverUrl = "http://192.168.1.17:3000";
 const wsUrl = "ws://192.168.1.17:3000";
+const USERNAME_KEY = "@livekit_username";
 
 export default function JoinScreen() {
   const [username, setUsername] = useState("");
@@ -30,6 +32,19 @@ export default function JoinScreen() {
   const router = useRouter();
 
   useEffect(() => {
+    // Load saved username
+    const loadUsername = async () => {
+      try {
+        const savedUsername = await AsyncStorage.getItem(USERNAME_KEY);
+        if (savedUsername) {
+          setUsername(savedUsername);
+        }
+      } catch (error) {
+        console.error("Failed to load username:", error);
+      }
+    };
+    loadUsername();
+
     // Initialize WebSocket connection
     const socket = new WebSocket(wsUrl);
 
@@ -64,6 +79,13 @@ export default function JoinScreen() {
     if (!username) {
       Alert.alert("Error", "Please enter your username.");
       return;
+    }
+
+    // Save username
+    try {
+      await AsyncStorage.setItem(USERNAME_KEY, username);
+    } catch (error) {
+      console.error("Failed to save username:", error);
     }
 
     setIsLoading(true);
