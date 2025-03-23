@@ -37,7 +37,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 registerGlobals();
 
 export default function RoomScreen() {
-  const { token, room } = useLocalSearchParams();
+  const { token, room: roomName } = useLocalSearchParams();
   const router = useRouter();
   const [isConnected, setIsConnected] = useState(false);
 
@@ -45,12 +45,17 @@ export default function RoomScreen() {
     let start = async () => {
       await AudioSession.startAudioSession();
     };
-
     start();
-    return () => {
-      AudioSession.stopAudioSession();
-    };
   }, []);
+
+  const handleDisconnect = async () => {
+    try {
+      await AudioSession.stopAudioSession();
+    } catch (err) {
+      console.error("Failed to stop audio session:", err);
+    }
+    router.push("/");
+  };
 
   return (
     <LiveKitRoom
@@ -62,18 +67,25 @@ export default function RoomScreen() {
       }}
       audio={true}
       video={true}
-      // @ts-ignore - type definitions seem incorrect
+      // @ts-ignore - React Native LiveKit types are different
       onConnected={() => setIsConnected(true)}
+      // @ts-ignore - React Native LiveKit types are different
+      onDisconnected={handleDisconnect}
     >
-      <RoomView roomName={room as string} />
+      <RoomView roomName={roomName as string} onLeave={handleDisconnect} />
     </LiveKitRoom>
   );
 }
 
-const RoomView = ({ roomName }: { roomName: string }) => {
+const RoomView = ({
+  roomName,
+  onLeave,
+}: {
+  roomName: string;
+  onLeave: () => Promise<void>;
+}) => {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  // Get all camera tracks
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -82,7 +94,7 @@ const RoomView = ({ roomName }: { roomName: string }) => {
     { updateOnlyOn: [] }
   );
   const { localParticipant } = useLocalParticipant();
-  // @ts-ignore - type definitions seem incorrect
+  // @ts-ignore - React Native LiveKit types are different
   const { room } = useLiveKitRoom();
   const participants = useParticipants();
   const [isMicEnabled, setIsMicEnabled] = useState(true);
@@ -105,9 +117,6 @@ const RoomView = ({ roomName }: { roomName: string }) => {
 
     return () => {
       localParticipant.off("connectionQualityChanged", updateQuality);
-      // Cleanup camera and mic
-      localParticipant.setCameraEnabled(false);
-      localParticipant.setMicrophoneEnabled(false);
     };
   }, [room, localParticipant]);
 
@@ -163,10 +172,14 @@ const RoomView = ({ roomName }: { roomName: string }) => {
       await localParticipant.setMicrophoneEnabled(false);
 
       // Then disconnect from room
-      room.disconnect();
-      router.push("/");
+      await room.disconnect();
+
+      // Call parent's onLeave to handle audio session cleanup and navigation
+      await onLeave();
     } catch (e) {
       console.error("Failed to leave room:", e);
+      // Still try to cleanup even if error
+      await onLeave();
     }
   };
 
