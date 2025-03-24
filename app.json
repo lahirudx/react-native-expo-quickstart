@@ -59,12 +59,12 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "5ae995ac-055a-4071-b4ac-6cacf3fc6741"
+        "projectId": "b17be722-f5d5-4502-bd1c-54f9dc7c2a36"
       },
       "router": {
         "origin": false
       }
     },
-    "owner": "lahirudx"
+    "owner": "vaayuu"
   }
 }
